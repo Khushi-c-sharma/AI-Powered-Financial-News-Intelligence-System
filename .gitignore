@@ -1,0 +1,9 @@
+.venv
+.vscode
+__pycache__/
+*.pyc
+.env
+.DS_Store
+logs/
+data/
+Hackathon_Problem_Statement.docx.pdf

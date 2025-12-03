@@ -1,0 +1,119 @@
+{
+  "sources": [
+    {
+      "name": "Economic Times - Top Stories",
+      "type": "rss",
+      "category": "Business",
+      "url": "https://economictimes.indiatimes.com/rssfeedstopstories.cms"
+    },
+    {
+      "name": "Economic Times - Markets",
+      "type": "rss",
+      "category": "Markets",
+      "url": "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms"
+    },
+    {
+      "name": "Economic Times - Banking",
+      "type": "rss",
+      "category": "Banking",
+      "url": "https://economictimes.indiatimes.com/industry/banking/finance/rssfeeds/13358259.cms"
+    },
+    {
+      "name": "Livemint - Business",
+      "type": "rss",
+      "category": "Business",
+      "url": "https://www.livemint.com/rss/news"
+    },
+    {
+      "name": "Livemint - Markets",
+      "type": "rss",
+      "category": "Markets",
+      "url": "https://www.livemint.com/rss/market"
+    },
+    {
+      "name": "Business Standard - Latest",
+      "type": "rss",
+      "category": "Business",
+      "url": "https://www.business-standard.com/rss/latest.rss"
+    },
+    {
+      "name": "Business Standard - Markets",
+      "type": "rss",
+      "category": "Markets",
+      "url": "https://www.business-standard.com/rss/markets.rss"
+    },
+    {
+      "name": "Moneycontrol - Latest News",
+      "type": "rss",
+      "category": "Markets",
+      "url": "https://www.moneycontrol.com/rss/latestnews.xml"
+    },
+    {
+      "name": "Moneycontrol - Market Reports",
+      "type": "rss",
+      "category": "Markets",
+      "url": "https://www.moneycontrol.com/rss/marketreports.xml"
+    },
+    {
+      "name": "Moneycontrol - Buzzing Stocks",
+      "type": "rss",
+      "category": "Stocks",
+      "url": "https://www.moneycontrol.com/rss/buzzingstocks.xml"
+    },
+    {
+      "name": "BSE Corporate Filings",
+      "type": "rss",
+      "category": "Corporate Filings",
+      "url": "https://www.bseindia.com/xml-data/corpfiling/rssfeed.xml"
+    },
+    {
+      "name": "SEBI - Press Releases",
+      "type": "rss",
+      "category": "Regulator",
+      "url": "https://www.sebi.gov.in/sebiweb/rss/pr/PR.xml"
+    },
+    {
+      "name": "SEBI - Circulars",
+      "type": "rss",
+      "category": "Regulator",
+      "url": "https://www.sebi.gov.in/sebiweb/rss/circulars/CIR.xml"
+    },
+    {
+      "name": "SEBI - Board Meetings",
+      "type": "rss",
+      "category": "Regulator",
+      "url": "https://www.sebi.gov.in/sebiweb/rss/boardmeetings/BM.xml"
+    },
+    {
+      "name": "Reuters - Business",
+      "type": "rss",
+      "category": "Business",
+      "url": "https://feeds.reuters.com/reuters/businessNews"
+    },
+    {
+      "name": "Reuters - Markets",
+      "type": "rss",
+      "category": "Markets",
+      "url": "https://feeds.reuters.com/reuters/marketsNews"
+    },
+    {
+      "name": "Financial Times - Markets",
+      "type": "rss",
+      "category": "Markets",
+      "url": "https://www.ft.com/markets?format=rss"
+    },
+    {
+      "name": "Yahoo Finance - NSE India Headlines",
+      "type": "rss",
+      "category": "Markets",
+      "url": "https://feeds.finance.yahoo.com/rss/2.0/headline?s=%5ENSEI&region=IN&lang=en-IN"
+    },
+    {
+      "name": "SEC EDGAR - Current Filings",
+      "type": "rss",
+      "category": "Regulator",
+      "url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&output=atom"
+    }
+  ]
+}
+
