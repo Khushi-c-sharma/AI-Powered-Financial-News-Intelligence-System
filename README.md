@@ -3,9 +3,7 @@
 > **Production-grade Multi-Agent RAG System** powered by LangGraph orchestration, designed to ingest, embed, deduplicate, analyze, and enrich financial news at scale. Built for the Tradl Hackathon.
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-
 [![LangGraph](https://img.shields.io/badge/LangGraph-Orchestration-green.svg)](https://langchain.com/langgraph)
-
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
 
 🎯 Overview
