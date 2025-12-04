@@ -1,6 +1,6 @@
 # Financial News Intelligence System 📰💹
 
-> **Production-grade Multi-Agent RAG System** powered by LangGraph orchestration, designed to ingest, embed, deduplicate, analyze, and enrich financial news at scale. Built for the Tradl Hackathon.
+> A **production-grade Multi-Agent RAG system** that transforms high-volume financial news into actionable market intelligence with real-time stock impact predictions.
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![LangGraph](https://img.shields.io/badge/LangGraph-Orchestration-green.svg)](https://langchain.com/langgraph)
@@ -644,8 +644,3 @@ Tested on: Intel i7-11th Gen, 16GB RAM, Windows 11
 
 *If you find this project useful, please star ⭐ the repository!*
 
----
-
-**Built with ❤️ for the financial community**
-
-*Star ⭐ this repo if you find it useful!*
