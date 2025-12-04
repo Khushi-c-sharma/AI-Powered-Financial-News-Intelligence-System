@@ -31,8 +31,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.pool import StaticPool
 
-# Transformers
-from transformers import pipeline
+# Transformers: UPDATED IMPORT
+from transformers import pipeline, AutoTokenizer 
 
 # ----------------------------
 # Logging
@@ -147,12 +147,19 @@ class RunResult(BaseModel):
 # ----------------------------
 SENTIMENT_MODEL = os.getenv("SENTIMENT_MODEL", "ProsusAI/finbert")
 EVENT_CLASS_MODEL = os.getenv("EVENT_CLASS_MODEL", "typeform/distilbert-base-uncased-mnli")
+
 SENTIMENT_PIPELINE = None
+SENTIMENT_TOKENIZER = None # NEW: For token-based truncation
 EVENT_PIPELINE = None
 SENTIMENT_LOCK = None
 EVENT_LOCK = None
 
-MAX_CONTEXT_CHARS = int(os.getenv("STOCK_IMPACT_MAX_CONTEXT", "4000"))
+# OLD: MAX_CONTEXT_CHARS
+# NEW: Use MAX_TOKENS for truncation (default 500 tokens)
+MAX_TOKENS = int(os.getenv("STOCK_IMPACT_MAX_TOKENS", "500"))
+# Keep MAX_CONTEXT_CHARS as a fallback if tokenizer fails
+MAX_CONTEXT_CHARS = int(os.getenv("STOCK_IMPACT_MAX_CONTEXT", "4000")) 
+
 
 EVENT_LABELS = [
     "earnings", "regulatory", "merger_acquisition", "layoff", "product_launch",
@@ -204,7 +211,7 @@ def sentiment_to_range(label: str, score: float) -> float:
     else:
         return -score
 
-def compute_direction_and_magnitude(event_type: str, sentiment: float, prior_confidence: float) -> (str, float):
+def compute_direction_and_magnitude(event_type: str, sentiment: float, prior_confidence: float) -> tuple[str, float]:
     """
     Decide direction (up/down/neutral) and magnitude 0..1.
     Simple rule-based combination of event_type and sentiment.
@@ -269,7 +276,7 @@ async def lifespan(app: FastAPI):
     logger.info("Database tables ready (article_stock_effects)")
 
     # Load HF pipelines (blocking)
-    global SENTIMENT_PIPELINE, EVENT_PIPELINE
+    global SENTIMENT_PIPELINE, EVENT_PIPELINE, SENTIMENT_TOKENIZER # UPDATED GLOBAL DECLARATION
     try:
         logger.info(f"Loading sentiment model: {SENTIMENT_MODEL}")
         SENTIMENT_PIPELINE = pipeline(
@@ -277,7 +284,9 @@ async def lifespan(app: FastAPI):
         model=SENTIMENT_MODEL,
         device=-1
         )
-        logger.info("✓ Sentiment pipeline loaded")
+        # NEW: Load Tokenizer for accurate context truncation
+        SENTIMENT_TOKENIZER = AutoTokenizer.from_pretrained(SENTIMENT_MODEL) 
+        logger.info("✓ Sentiment pipeline and tokenizer loaded")
 
         logger.info(f"Loading event classification model: {EVENT_CLASS_MODEL}")
         EVENT_PIPELINE = pipeline(
@@ -302,18 +311,34 @@ app = FastAPI(title="Stock Impact Analysis Agent", version="1.0.0", lifespan=lif
 async def fetch_article_stock_impacts(limit: int = 50) -> Dict[str, Dict[str, Any]]:
     """
     Fetch recent stock_impacts grouped by article_id along with cached context.
+    
+    OPTIMIZATION: Exclude articles that have already been processed 
+    (i.e., those with records in ArticleStockEffect).
     """
     async with Session() as db:
-        article_rows = await db.execute(
+        
+        # 1. Identify article_ids that have ALREADY been processed
+        # This is a list of article_ids that have an existing record in the final output table.
+        processed_q = select(ArticleStockEffect.article_id).distinct()
+        # Use scalars().all() to get a simple list of article_ids
+        processed_article_ids = (await db.execute(processed_q)).scalars().all()
+
+        # 2. Select recent StockImpacts, ensuring article_id is NOT in the processed list
+        # We fetch the article_id based on the StockImpact table
+        impacts_q = (
             select(StockImpact.article_id)
+            .where(StockImpact.article_id.notin_(processed_article_ids)) # <--- NEW FILTER APPLIED HERE
             .order_by(StockImpact.created_at.desc())
             .limit(limit)
         )
-        raw_article_ids = article_rows.scalars().all()
-        article_ids = list(dict.fromkeys(raw_article_ids))
+        raw_article_ids = (await db.execute(impacts_q)).scalars().all()
+        
+        # Use dict.fromkeys to preserve order while ensuring uniqueness
+        article_ids = list(dict.fromkeys(raw_article_ids)) 
         if not article_ids:
             return {}
 
+        # 3. Fetch all StockImpact and ArticleEntity records for the remaining (unprocessed) article_ids
         impacts_res = await db.execute(
             select(StockImpact).where(StockImpact.article_id.in_(article_ids))
         )
@@ -390,7 +415,22 @@ async def analyze_article_for_stock_effect(
         context = " ".join([(i.get("reasoning") or "") for i in impacts])
 
     context = normalize_text(context)
-    truncated_context = context[:MAX_CONTEXT_CHARS]
+    
+    # NEW: Token-based truncation
+    if SENTIMENT_TOKENIZER is not None:
+        # Use encode to truncate to max_tokens, then decode back to string
+        # We set max_length=MAX_TOKENS and truncation=True
+        encoded = SENTIMENT_TOKENIZER.encode(
+            context,
+            max_length=MAX_TOKENS,
+            truncation=True,
+            return_tensors='pt' # return as tensor
+        )
+        truncated_context = SENTIMENT_TOKENIZER.decode(encoded[0], skip_special_tokens=True)
+        logger.debug(f"Truncated context to {encoded.size(1)} tokens.")
+    else:
+        # Fallback to character-based truncation
+        truncated_context = context[:MAX_CONTEXT_CHARS]
 
     # Run sentiment and event classification synchronously via executor
     loop = asyncio.get_running_loop()
@@ -435,8 +475,18 @@ async def analyze_article_for_stock_effect(
         prior_conf = float(imp.get("stock_confidence", 0.5))
         # Compute direction/magnitude
         direction, magnitude = compute_direction_and_magnitude(event_type or "other", sentiment_val, prior_conf)
-        # Combined confidence: product of prior, event_score and sentiment magnitude
-        combined_conf = min(1.0, max(0.0, prior_conf * (event_score if event_score else 0.5) * (abs(sentiment_val) + 0.5)))
+        
+        # UPDATED: Combined confidence (Weighted Average)
+        # Weights: Prior Conf (0.4), Event Score (0.3), Absolute Sentiment Magnitude (0.3)
+        event_score_norm = event_score if event_score else 0.5
+        sentiment_mag_norm = abs(sentiment_val)
+        combined_conf = (
+            0.4 * prior_conf +
+            0.3 * event_score_norm +
+            0.3 * sentiment_mag_norm
+        )
+        combined_conf = min(1.0, max(0.0, combined_conf))
+
 
         reasoning_parts = [
             f"Extraction reasoning: {imp.get('reasoning')}" if imp.get("reasoning") else "",
@@ -489,7 +539,8 @@ async def run_bulk(cfg: RunConfig):
     """
     limit = int(cfg.limit or 20)
     logger.info(f"[StockImpactAgent] Running bulk analysis (limit={limit})")
-    pending = await fetch_article_stock_impacts(limit)
+    # fetch_article_stock_impacts now filters out already processed articles.
+    pending = await fetch_article_stock_impacts(limit) 
     if not pending:
         return RunResult(status="completed", processed=0, effects_generated=0, errors=0)
 
